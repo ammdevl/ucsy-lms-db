@@ -1,0 +1,9 @@
+# Force .sql files to be recognized as MySQL
+*.sql linguist-language=MySQL
+
+# Ensure .tex files are included in language stats
+*.tex linguist-detectable=true
+
+# Map StarUML model files to JSON for language stats
+*.mdj linguist-language=JSON
+*.mdj linguist-detectable=true
