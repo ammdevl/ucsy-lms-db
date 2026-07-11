@@ -1,6 +1,7 @@
 ## ⛃ Database Design for UCSY LMS
 [![MIT License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![GitHub](https://img.shields.io/badge/GitHub-ammdevl-181717?logo=github)](https://github.com/ammdevl)
+[![GitHub](https://img.shields.io/badge/GitHub-ammdevl-181717?logo=github)](https://github.com/ammdevl)[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](http://makeapullrequest.com)
+[![GitHub issues](https://img.shields.io/github/issues/ammdevl/ucsy-lms-db.svg)](https://github.com/ammdevl/ucsy-lms-db/issues)
 
 ## 📋 Table of Contents
 
@@ -8,341 +9,351 @@
 - [Repository Structure](#-repository-structure)
 - [Technologies & Tools](#️-technologies--tools)
 - [Getting Started](#-getting-started)
-- [Details](#-database-design-details)
+- [ER Diagram](#-er-diagram)
+- [Database Design Details](#-database-design-details)
+- [Analytical Queries](#-analytical-queries)
+- [Group Members](#-group-members)
 - [Contributing](#-contributing)
 - [License](#-license)
 - [Contact](#-contact)
+
 ## 📖 About
 This repository documents the formal Database Design and Implementation for the University of Computer Studies, Yangon (UCSY) Learning Management System. It showcases a complete data modeling workflow—from initial requirement analysis and ER Diagramming to optimized SQL schema development.
 
+This project was created for the **Fundamental Database Management System (IS-201)** course, Faculty of Information Science, Semester III, 2025–2026 Academic Year.
+
 ## 📁 Repository Structure
 ```bash
-├── ucsy-lms-db
-│   ├── design
-│   │   └── ucsy_lms_db_erd.mdj
-│   ├── docs
-│   │   ├── announcements.png
-│   │   ├── assessments.png
-│   │   ├── attendance.png
-│   │   ├── classes.png
-│   │   ├── courses.png
-│   │   ├── departments.png
-│   │   ├── enrollments.png
-│   │   ├── grades.png
-│   │   ├── instructors.png
-│   │   ├── lectures.png
-│   │   ├── parents.png
-│   │   ├── query1.png
-│   │   ├── query2.png
-│   │   ├── query3.png
-│   │   ├── query4.png
-│   │   ├── query5.png
-│   │   ├── query6.png
-│   │   ├── query7.png
-│   │   ├── query8.png
-│   │   ├── resources.png
-│   │   ├── room.png
-│   │   ├── sections.png
-│   │   ├── sem_III_dbms_project.tex
-│   │   ├── students.png
-│   │   ├── terms.png
-│   │   ├── ucsy_lms_db_erd_mysql.png
-│   │   ├── ucsy_lms_db_erd_staruml.png
-│   │   └── ucsy-logo.png
-│   ├── .git
-│   ├── .gitattributes
-│   ├── .gitignore
-│   ├── LICENSE
-│   ├── README.md
-│   └── sql_script
-│       └── ucsy-lms-db.sql
+ucsy-lms-db/
+├── design/
+│   └── ucsy_lms_db_erd.mdj          # StarUML ER diagram model
+├── docs/
+│   ├── sem_III_dbms_project.tex      # LaTeX academic report
+│   ├── ucsy-logo.png
+│   ├── ucsy_lms_db_erd_mysql.png     # ER diagram (MySQL Workbench)
+│   ├── ucsy_lms_db_erd_staruml.png   # ER diagram (StarUML)
+│   ├── departments.png               # Table data screenshots
+│   ├── room.png
+│   ├── terms.png
+│   ├── sections.png
+│   ├── students.png
+│   ├── parents.png
+│   ├── instructors.png
+│   ├── courses.png
+│   ├── lectures.png
+│   ├── classes.png
+│   ├── enrollments.png
+│   ├── assessments.png
+│   ├── attendance.png
+│   ├── resources.png
+│   ├── grades.png
+│   ├── announcements.png
+│   ├── query1.png – query8.png       # Query execution screenshots
+├── sql_script/
+│   └── ucsy-lms-db.sql              # Main SQL script
+├── .gitignore
+├── LICENSE
+└── README.md
 ```
 
-The parent directory - /ucsy_lms_db contains:
-- **design/**: Database design diagrams
-- **docs/**: Documentation
-- **LICENSE**: MIT License
-- **README.md**: Project specific documentation
-- **sql_script/**: sql script to run on your MySQL Workbench
-
 ## 🛠️ Technologies & Tools
-Throughout my project, I used the following tools:
 | Category | Tool | Purpose |
 | --- | --- | --- |
 | Design | StarUML | Conceptual & Logical ER Diagrams |
 | Database | MySQL (Server/Workbench/Shell) | Schema Implementation & Query Execution |
-| Publishing | LaTex | Academic Documentation & Formatting |
-| Version Control | Git & Github | Track version and upload on thwoe Github |
+| Publishing | LaTeX | Academic Documentation & Formatting |
+| Version Control | Git & GitHub | Version control and remote hosting |
 
 ## 🚀 Getting Started
 
-To explore any project in this repository:
+### Prerequisites
+- MySQL Server (v8.0 or compatible)
+- MySQL Workbench (recommended for visual query execution)
 
+### Installation
 1. **Clone the repository**
    ```bash
    git clone https://github.com/ammdevl/ucsy-lms-db.git
    ```
 
-2. **Navigate to project**
+2. **Navigate to the project**
    ```bash
-   cd ucsy_lms_db
+   cd ucsy-lms-db
    ```
 
-3. **Follow project-specific instructions**
-   
-   Read README.md.
+3. **Run the SQL script**
+   Open `sql_script/ucsy-lms-db.sql` in MySQL Workbench and execute it. The script will:
+   - Drop any existing `ucsy_lms_db` database
+   - Create a fresh database with 16 tables
+   - Populate all tables with seed data
+
+> **Note:** The script contains comprehensive seed data including 10 departments, 80 rooms, 10 terms, 60 sections, 112 students, 100 instructors, ~60 courses, and corresponding records across all other tables.
+
+## 📐 ER Diagram
+
+![ER Diagram - StarUML](docs/ucsy_lms_db_erd_staruml.png)
+
+The full ER diagram model can be opened in StarUML using the file at [`design/ucsy_lms_db_erd.mdj`](design/ucsy_lms_db_erd.mdj).
 
 ## 📃 Database Design Details
 
-In this section, I will provide the structured breakdown of the entities and their attributes:
+The database includes **16 entities**: Departments, Room, Terms, Sections, Students, Parents, Instructors, Courses, Lectures, Classes, Enrollments, Assessments, Announcements, Attendance, Resources, and Grades.
 
 ### Entities and Attributes
 
-The database design includes entities such as **Departments, Room, Terms, Sections, Students, Parents, Instructors, Courses, Lectures, Classes, Enrollments, Assessments, Announcements, Attendance, Resources, and Grades**.
-
 #### 1. Departments
+Categorizes the various academic departments within the university.
 
-This entity categorizes the various academic departments within the university.
-
-* **department_id** (Primary Key): Unique identifier for the department.
-* **department_name**: The official name of the department.
+* **department_id** (PK): Unique identifier.
+* **department_name**: Official name of the department.
 
 ---
 
 #### 2. Room
+Stores information about physical locations where classes are held.
 
-Stores information about physical locations where classes and lectures are held.
-
-* **room_id** (Primary Key): Unique identifier for each room.
+* **room_id** (PK): Unique identifier.
 * **room_name**: Name or number of the room.
-* **building_name**: The specific campus building (A, B, C, D, E, F, Ext1, or Ext2).
+* **building_name**: Campus building (A, B, C, D, E, F, Ext1, or Ext2).
 
 ---
 
 #### 3. Terms
+Defines academic periods and their active status.
 
-Defines the academic periods, semesters, and their active status.
-
-* **term_id** (Primary Key): Unique identifier for the academic term.
-* **semester_name**: Roman numeral representation of the semester (I through X).
-* **academic_year**: The school year (e.g., 2023-2024).
-* **is_active**: Boolean flag indicating if the term is currently ongoing.
-* **start_date**: The date the term begins.
-* **end_date**: The date the term concludes.
+* **term_id** (PK): Unique identifier.
+* **semester_name**: Roman numeral (I through X).
+* **academic_year**: School year (e.g., 2023-2024).
+* **is_active**: Boolean flag for the current term.
+* **start_date**: Term start date.
+* **end_date**: Term end date.
 
 ---
 
 #### 4. Sections
+Student cohorts assigned to a particular term and room.
 
-Represents specific student cohorts assigned to a particular room and term.
-
-* **section_id** (Primary Key): Unique identifier for the section.
-* **term_id**: Reference to the academic term.
-* **section_name**: The name of the specific student group/section.
-* **room_id**: Reference to the primary room assigned to this section.
+* **section_id** (PK): Unique identifier.
+* **term_id** (FK): Reference to the academic term.
+* **section_name**: Name of the student group.
+* **room_id** (FK): Primary room assigned to this section.
 
 ---
 
 #### 5. Students
+Personal details and academic placement for each student.
 
-This entity stores personal details and academic placement for each student.
-
-* **ykpt** (Primary Key): Unique student identifier.
-* **term_id**: Reference to the student's assigned term.
-* **first_name**: Student's first name.
-* **middle_name**: Student's middle name.
-* **last_name**: Student's last name.
-* **dob**: Student's date of birth.
+* **ykpt** (PK): Unique student identifier.
+* **term_id** (FK): Reference to the assigned term.
+* **first_name**: First name.
+* **middle_name**: Middle name.
+* **last_name**: Last name.
+* **dob**: Date of birth.
 * **edu_mail**: Official university email (Unique).
 * **telephone**: Contact phone number (Unique).
 * **password**: Encrypted login credential.
-* **created_at**: Timestamp of account creation.
+* **created_at**: Account creation timestamp.
 
 ---
 
 #### 6. Parents
+Contact information for parents or guardians.
 
-Stores contact information for the parents or guardians of students.
-
-* **parent_id** (Primary Key): Unique identifier for the parent record.
-* **ykpt**: Reference to the student (Foreign Key).
-* **father_name**: Name of the father.
-* **mother_name**: Name of the mother.
-* **email**: Parent's contact email.
-* **telephone**: Parent's contact phone number.
+* **parent_id** (PK): Unique identifier.
+* **ykpt** (FK): Reference to the student.
+* **father_name**: Father's name.
+* **mother_name**: Mother's name.
+* **email**: Parent's email.
+* **telephone**: Parent's phone number.
 
 ---
 
 #### 7. Instructors
+Profiles for faculty members teaching courses.
 
-Contains profiles for the faculty members teaching the courses.
-
-* **instructor_id** (Primary Key): Unique identifier for the instructor.
-* **first_name**: Instructor's first name.
-* **middle_name**: Instructor's middle name.
-* **last_name**: Instructor's last name.
-* **department_id**: Reference to the instructor's home department.
+* **instructor_id** (PK): Unique identifier.
+* **first_name**: First name.
+* **middle_name**: Middle name.
+* **last_name**: Last name.
+* **department_id** (FK): Home department.
 * **edu_mail**: Official faculty email (Unique).
 * **telephone**: Contact phone number (Unique).
 * **password**: Encrypted login credential.
-* **created_at**: Timestamp of account creation.
+* **created_at**: Account creation timestamp.
 
 ---
 
 #### 8. Courses
+Individual subjects offered by departments.
 
-Defines the individual subjects or modules offered by departments.
-
-* **course_id** (Primary Key): Unique identifier for the course.
-* **term_id**: Reference to the student's assigned term.
-* **department_id**: Reference to the department offering the course.
-* **course_name**: The title of the course.
-* **course_description**: Detailed overview of the course content.
-* **start_date**: Official start date of the course.
-* **end_date**: Official end date of the course.
+* **course_id** (PK): Unique identifier.
+* **term_id** (FK): Assigned term.
+* **department_id** (FK): Offering department.
+* **course_name**: Course title.
+* **course_description**: Content overview.
+* **start_date**: Course start date.
+* **end_date**: Course end date.
 
 ---
 
 #### 9. Lectures
+Links instructors, courses, and sections to teaching sessions.
 
-Links instructors, courses, and sections to specific teaching sessions.
-
-* **lecture_id** (Primary Key): Unique identifier for the lecture series.
-* **term_id**: Reference to the current term.
-* **course_id**: Reference to the specific course.
-* **instructor_id**: Reference to the instructor teaching the lecture.
-* **section_id**: Reference to the student section attending.
-* **lecture_name**: Title of the specific lecture.
-* **lecture_description**: Summary of lecture topics.
+* **lecture_id** (PK): Unique identifier.
+* **term_id** (FK): Current term.
+* **course_id** (FK): Associated course.
+* **instructor_id** (FK): Teaching instructor.
+* **section_id** (FK): Attending student section.
+* **lecture_name**: Lecture title.
+* **lecture_description**: Topic summary.
 
 ---
 
 #### 10. Classes
+Individual scheduled instances of lectures in specific rooms.
 
-Tracks individual scheduled instances of lectures in specific rooms.
-
-* **class_id** (Primary Key): Unique identifier for a single class session.
-* **lecture_id**: Reference to the parent lecture.
-* **room_id**: Reference to the room where the class is held.
-* **class_date**: The date the class takes place.
-* **start_time**: The scheduled start time.
-* **end_time**: The scheduled end time.
+* **class_id** (PK): Unique identifier.
+* **lecture_id** (FK): Parent lecture.
+* **room_id** (FK): Assigned room.
+* **class_date**: Session date.
+* **start_time**: Scheduled start.
+* **end_time**: Scheduled end.
 
 ---
 
 #### 11. Enrollments
+Student-course enrollment with progress tracking.
 
-Manages the relationship between students and the courses they are taking.
-
-* **enrollment_id** (Primary Key): Unique identifier for the enrollment.
-* **ykpt**: Reference to the student.
-* **term_id**: Reference to the term of enrollment.
-* **course_id**: Reference to the enrolled course.
-* **enrolled_at**: Timestamp of when the student joined.
-* **completion_status**: Current progress (Not Started, In Progress, or Completed).
+* **enrollment_id** (PK): Unique identifier.
+* **ykpt** (FK): Reference to the student.
+* **term_id** (FK): Enrollment term.
+* **course_id** (FK): Enrolled course.
+* **enrolled_at**: Enrollment timestamp.
+* **completion_status**: Not Started, In Progress, or Completed.
 
 ---
 
 #### 12. Assessments
+Tasks and exams assigned within a course.
 
-Details the various tasks and exams assigned within a course.
-
-* **assessment_id** (Primary Key): Unique identifier for the assessment.
-* **course_id**: Reference to the associated course.
-* **assessment_type**: Type of work (Tutorial, Assignment, Lab Test, Quiz, etc.).
-* **assessment_name**: Title of the assessment.
+* **assessment_id** (PK): Unique identifier.
+* **course_id** (FK): Associated course.
+* **assessment_type**: Tutorial, Assignment, Lab Test, Quiz, etc.
+* **assessment_name**: Assessment title.
 * **assessment_description**: Instructions or details.
-* **due_date**: Deadline for submission.
+* **due_date**: Submission deadline.
 * **assessment_score**: Maximum possible points.
-* **completion_status**: General status of the assessment.
+* **completion_status**: General status.
 
 ---
 
 #### 13. Announcements
+Instructor broadcasts to specific courses.
 
-Used by instructors to broadcast information to specific courses.
-
-* **announcement_id** (Primary Key): Unique identifier for the announcement.
-* **course_id**: Reference to the relevant course.
-* **instructor_id**: Reference to the instructor posting the update.
-* **announcement_description**: The content of the announcement.
-* **announced_at**: Timestamp of the post.
+* **announcement_id** (PK): Unique identifier.
+* **course_id** (FK): Relevant course.
+* **instructor_id** (FK): Posting instructor.
+* **announcement_description**: Announcement content.
+* **announced_at**: Post timestamp.
 
 ---
 
 #### 14. Attendance
+Student presence records for class sessions.
 
-Records student presence during specific class sessions.
-
-* **attendance_id** (Primary Key): Unique identifier for the attendance record.
-* **ykpt**: Reference to the student.
-* **class_id**: Reference to the specific class session.
-* **time_arrived**: Timestamp of student arrival.
-* **time_left**: Timestamp of student departure.
+* **attendance_id** (PK): Unique identifier.
+* **ykpt** (FK): Reference to the student.
+* **class_id** (FK): Class session.
+* **time_arrived**: Arrival timestamp.
+* **time_left**: Departure timestamp.
 
 ---
 
 #### 15. Resources
+Educational materials provided in courses.
 
-Stores links and metadata for educational materials provided in courses.
-
-* **resource_id** (Primary Key): Unique identifier for the resource.
-* **course_id**: Reference to the course the resource belongs to.
-* **resource_type**: Category of material (Video, Slides, TextBook, etc.).
-* **url**: The web address or file path to the resource.
-* **uploaded_time**: Timestamp of when the resource was added.
+* **resource_id** (PK): Unique identifier.
+* **course_id** (FK): Associated course.
+* **resource_type**: Video, Slides, TextBook, etc.
+* **url**: Resource web address or file path.
+* **uploaded_time**: Upload timestamp.
 
 ---
 
 #### 16. Grades
+Student performance on specific assessments.
 
-Tracks the performance of students on specific assessments.
+* **grade_id** (PK): Unique identifier.
+* **ykpt** (FK): Student being graded.
+* **assessment_id** (FK): Specific assessment.
+* **earned_score**: Points achieved.
+* **feedback**: Instructor comments.
+* **graded_at**: Grading timestamp.
 
-* **grade_id** (Primary Key): Unique identifier for the grade entry.
-* **ykpt**: Reference to the student being graded.
-* **assessment_id**: Reference to the specific assessment.
-* **earned_score**: The actual points achieved by the student.
-* **feedback**: Written comments from the instructor.
-* **graded_at**: Timestamp of when the grade was recorded.
-
-### **Database Relationship - Cardinality**
+### Database Relationship — Cardinality
 
 | Relationship | Type | Description |
 | --- | --- | --- |
 | **Departments — Instructors** | One-to-Many | One department employs multiple instructors. |
-| **Departments — Courses** | One-to-Many | One department manages and offers multiple different courses. |
-| **Room — Classes** | One-to-Many | One physical room hosts multiple individual class sessions over time. |
-| **Terms — Sections** | One-to-Many | One academic term contains multiple student sections. |
-| **Terms — Enrollments** | One-to-Many | One academic term manages many student enrollments. |
-| **Terms — Courses** | One-to-Many | One academic term hosts various courses. |
-| **Sections — Students** | One-to-Many | One section consists of multiple enrolled students. |
-| **Sections — Lectures** | One-to-Many | One section is assigned to attend multiple different lectures. |
-| **Students — Parents** | Many-to-One | Multiple students (such as siblings) can be linked to the same parent record via the `ykpt` key. |
-| **Students — Enrollments** | One-to-Many | One student can have multiple enrollment records across different courses or terms. |
-| **Instructors — Courses** | One-to-Many | One instructor is responsible for conducting multiple courses. |
-| **Instructors — Lectures** | One-to-Many | One instructor is responsible for conducting multiple lecture series. |
-| **Instructors — Announcements** | One-to-Many | One instructor can post multiple announcements to their courses. |
-| **Courses — Enrollments** | One-to-Many | One course can have many students enrolled in it. |
-| **Courses — Lectures** | One-to-Many | One course can be broken down into multiple lecture series. |
-| **Courses — Assessments** | One-to-Many | One course contains multiple assessments like quizzes and exams. |
-| **Courses — Announcements** | One-to-Many | One course acts as a hub for multiple instructor announcements. |
-| **Courses — Resources** | One-to-Many | One course provides multiple learning resources like slides or videos. |
-| **Lectures — Classes** | One-to-Many | One lecture series consists of multiple individual class sessions. |
-| **Classes — Attendance** | One-to-Many | One specific class session has an attendance record for every student present. |
-| **Assessments — Grades** | One-to-Many | One assessment results in many grade entries (one for each student). |
+| **Departments — Courses** | One-to-Many | One department manages multiple courses. |
+| **Room — Classes** | One-to-Many | One room hosts multiple class sessions. |
+| **Terms — Sections** | One-to-Many | One term contains multiple sections. |
+| **Terms — Enrollments** | One-to-Many | One term manages many enrollments. |
+| **Terms — Courses** | One-to-Many | One term hosts various courses. |
+| **Sections — Students** | One-to-Many | One section has multiple students. |
+| **Sections — Lectures** | One-to-Many | One section attends multiple lectures. |
+| **Students — Parents** | Many-to-One | Multiple students (siblings) can share a parent record. |
+| **Students — Enrollments** | One-to-Many | One student has multiple enrollment records. |
+| **Instructors — Courses** | One-to-Many | One instructor conducts multiple courses. |
+| **Instructors — Lectures** | One-to-Many | One instructor manages multiple lectures. |
+| **Instructors — Announcements** | One-to-Many | One instructor posts multiple announcements. |
+| **Courses — Enrollments** | One-to-Many | One course has many students enrolled. |
+| **Courses — Lectures** | One-to-Many | One course has multiple lectures. |
+| **Courses — Assessments** | One-to-Many | One course contains multiple assessments. |
+| **Courses — Announcements** | One-to-Many | One course has multiple announcements. |
+| **Courses — Resources** | One-to-Many | One course provides multiple resources. |
+| **Lectures — Classes** | One-to-Many | One lecture has multiple class sessions. |
+| **Classes — Attendance** | One-to-Many | One class session has attendance per student. |
+| **Assessments — Grades** | One-to-Many | One assessment has grade entries per student. |
+
+## 📊 Analytical Queries
+
+The SQL script includes 8 analytical queries that demonstrate practical database operations:
+
+| # | Query | Description |
+| --- | --- | --- |
+| 1 | Enrollment by Department | Total students enrolled per department, sorted by highest. |
+| 2 | In-Progress Courses | Count of courses currently in progress for a specific term. |
+| 3 | Late Attendance | Number of late attendance records per student. |
+| 4 | Top Instructor | Instructor with the highest number of assigned lectures. |
+| 5 | Past-Due Assessments | Assessments past their due date and not completed. |
+| 6 | Student Enrollment History | Enrollment history and completion status for a specific student. |
+| 7 | Course Resources | Total number of academic resources for a specific course. |
+| 8 | Class Attendance | Students who attended a specific class with arrival times. |
+
+Execution screenshots for each query are available in the [`docs/`](docs/) directory.
+
+## 👥 Group Members
+
+| No. | Name | YKPT | Role |
+| --- | --- | --- | --- |
+| 1 | Aung Myint Myat | 23046 | Project Leader |
+| 2 | Aung Khant Kyaw | 23023 | Designer |
+| 3 | Phyo Khant Kyaw | 23027 | Designer |
+| 4 | Min Khant Aung | 23036 | Designer |
+| 5 | Chan Myaw Htike | 23057 | SQL |
+| 6 | Ye Kyaw Swar | 23050 | SQL |
+| 7 | Htet Thu Aung | 23019 | SQL |
+| 8 | Aung Oo Khant | 23031 | Documentation |
+| 9 | Nyan Linn Htet | 23016 | Documentation |
 
 ## 🤝 Contributing
 
-While this is primarily a personal academic portfolio, I'm open to:
-- Suggestions for improvements
-- Bug reports
-- Code reviews and feedback
-
-If you'd like to provide feedback, please open an issue or reach out directly.
+While this is primarily an academic portfolio project, suggestions for improvements, bug reports, and code reviews are welcome. Please open an issue or reach out directly.
 
 ## 📄 License
 
-This repository is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This repository is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.
 
 ## 📧 Contact
 
