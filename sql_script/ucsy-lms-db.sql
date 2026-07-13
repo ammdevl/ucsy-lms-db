@@ -219,10 +219,6 @@ create table if not exists Grades(
 ALTER TABLE Terms ADD CONSTRAINT chk_terms_dates
     CHECK (end_date IS NULL OR end_date > start_date);
 
--- Students: dob must be in the past
-ALTER TABLE Students ADD CONSTRAINT chk_students_dob
-    CHECK (dob < CURDATE());
-
 -- Students: telephone must start with '09'
 ALTER TABLE Students ADD CONSTRAINT chk_students_phone
     CHECK (telephone LIKE '09%');
@@ -242,18 +238,6 @@ ALTER TABLE Assessments ADD CONSTRAINT chk_assessments_score
 -- Grades: earned_score must be non-negative
 ALTER TABLE Grades ADD CONSTRAINT chk_grades_score
     CHECK (earned_score >= 0);
-
--- Grades: earned_score cannot exceed assessment score
-ALTER TABLE Grades ADD CONSTRAINT chk_grades_score_max
-    CHECK (earned_score <= (SELECT assessment_score FROM Assessments WHERE assessment_id = Grades.assessment_id));
-
--- Attendance: time_left must be after time_arrived
-ALTER TABLE Attendance ADD CONSTRAINT chk_attendance_times
-    CHECK (time_left > time_arrived);
-
--- Classes: end_time must be after start_time
-ALTER TABLE Classes ADD CONSTRAINT chk_classes_times
-    CHECK (end_time IS NULL OR end_time > start_time);
 
 -- =============================================
 -- INDEXES
@@ -491,6 +475,40 @@ BEGIN
         UPDATE Enrollments
         SET completion_status = 'In Progress'
         WHERE ykpt = NEW.ykpt AND course_id = course_id_var;
+    END IF;
+END //
+
+-- Trigger: Validate grade score does not exceed max
+CREATE TRIGGER trg_validate_grade_score
+BEFORE INSERT ON Grades
+FOR EACH ROW
+BEGIN
+    DECLARE v_max_score INT;
+
+    SELECT assessment_score INTO v_max_score
+    FROM Assessments
+    WHERE assessment_id = NEW.assessment_id;
+
+    IF NEW.earned_score > v_max_score THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Earned score cannot exceed assessment max score';
+    END IF;
+END //
+
+-- Trigger: Validate grade score on update
+CREATE TRIGGER trg_validate_grade_score_update
+BEFORE UPDATE ON Grades
+FOR EACH ROW
+BEGIN
+    DECLARE v_max_score INT;
+
+    SELECT assessment_score INTO v_max_score
+    FROM Assessments
+    WHERE assessment_id = NEW.assessment_id;
+
+    IF NEW.earned_score > v_max_score THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Earned score cannot exceed assessment max score';
     END IF;
 END //
 
