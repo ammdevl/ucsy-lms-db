@@ -56,8 +56,8 @@ create table if not exists Sections(
     term_id int not null,
     section_name varchar(255) not null,
     room_id int not null,
-    foreign key (room_id) references Room(room_id),
-    foreign key (term_id) references Terms(term_id)
+    foreign key (room_id) references Room(room_id) on update cascade on delete restrict,
+    foreign key (term_id) references Terms(term_id) on update cascade on delete restrict
 );
 
 -- Students
@@ -70,9 +70,9 @@ create table if not exists Students(
     dob date not null,
     edu_mail varchar(255) not null unique,
     telephone varchar(15) not null unique,
-    password varchar(255) not null, 
+    password varchar(255) not null,
     created_at timestamp default current_timestamp,
-    foreign key (term_id) references Terms(term_id)
+    foreign key (term_id) references Terms(term_id) on update cascade on delete restrict
 );
 
 -- Parents
@@ -83,7 +83,7 @@ create table if not exists Parents(
     mother_name varchar(255) not null,
     email varchar(255) not null,
     telephone varchar(15) not null,
-    foreign key (ykpt) references Students(ykpt)
+    foreign key (ykpt) references Students(ykpt) on update cascade on delete cascade
 );
 
 -- Instructors
@@ -97,7 +97,7 @@ create table if not exists Instructors(
     telephone varchar(15) not null unique,
     password varchar(255) not null,
     created_at timestamp not null default current_timestamp,
-    foreign key (department_id) references Departments(department_id)
+    foreign key (department_id) references Departments(department_id) on update cascade on delete restrict
 );
 
 -- Courses
@@ -109,8 +109,8 @@ create table if not exists Courses(
     course_description text,
     start_date date not null,
     end_date date,
-    foreign key (department_id) references Departments(department_id),
-    foreign key (term_id) references Terms(term_id)
+    foreign key (department_id) references Departments(department_id) on update cascade on delete restrict,
+    foreign key (term_id) references Terms(term_id) on update cascade on delete restrict
 );
 
 -- Lectures
@@ -122,10 +122,10 @@ create table if not exists Lectures(
     section_id int not null,
     lecture_name varchar(255) not null,
     lecture_description text,
-    foreign key (term_id) references Terms(term_id),
-    foreign key (course_id) references Courses(course_id),
-    foreign key (instructor_id) references Instructors(instructor_id),
-    foreign key (section_id) references Sections(section_id)
+    foreign key (term_id) references Terms(term_id) on update cascade on delete restrict,
+    foreign key (course_id) references Courses(course_id) on update cascade on delete cascade,
+    foreign key (instructor_id) references Instructors(instructor_id) on update cascade on delete restrict,
+    foreign key (section_id) references Sections(section_id) on update cascade on delete restrict
 );
 
 -- Classes
@@ -136,8 +136,8 @@ create table if not exists Classes(
     class_date date not null,
     start_time timestamp not null,
     end_time timestamp,
-    foreign key (lecture_id) references Lectures(lecture_id),
-    foreign key (room_id) references Room(room_id)
+    foreign key (lecture_id) references Lectures(lecture_id) on update cascade on delete cascade,
+    foreign key (room_id) references Room(room_id) on update cascade on delete restrict
 );
 
 
@@ -149,9 +149,9 @@ create table if not exists Enrollments(
     course_id int not null,
     enrolled_at timestamp not null default current_timestamp,
     completion_status enum('Not Started','In Progress','Completed') default 'Not Started',
-    foreign key (term_id) references Terms(term_id),
-    foreign key (ykpt) references Students(ykpt),
-    foreign key (course_id) references Courses(course_id)
+    foreign key (term_id) references Terms(term_id) on update cascade on delete restrict,
+    foreign key (ykpt) references Students(ykpt) on update cascade on delete cascade,
+    foreign key (course_id) references Courses(course_id) on update cascade on delete cascade
 );
 
 -- Assessments
@@ -164,7 +164,7 @@ create table if not exists Assessments(
     due_date datetime not null,
     assessment_score int not null,
     completion_status enum('Not Started','In Progress','Completed') default 'Not Started',
-    foreign key (course_id) references Courses(course_id)
+    foreign key (course_id) references Courses(course_id) on update cascade on delete cascade
 );
 
 -- Announcements
@@ -174,8 +174,8 @@ create table if not exists Announcements(
     instructor_id int not null,
     announcement_description text not null,
     announced_at timestamp not null,
-    foreign key (course_id) references Courses(course_id),
-    foreign key (instructor_id) references Instructors(instructor_id)
+    foreign key (course_id) references Courses(course_id) on update cascade on delete cascade,
+    foreign key (instructor_id) references Instructors(instructor_id) on update cascade on delete restrict
 );
 
 -- Attendance
@@ -185,8 +185,8 @@ create table if not exists Attendance(
     class_id int not null,
     time_arrived timestamp not null,
     time_left timestamp not null,
-    foreign key (ykpt) references Students(ykpt),
-    foreign key (class_id) references Classes(class_id)
+    foreign key (ykpt) references Students(ykpt) on update cascade on delete cascade,
+    foreign key (class_id) references Classes(class_id) on update cascade on delete cascade
 );
 
 -- Resources
@@ -196,7 +196,7 @@ create table if not exists Resources(
 	resource_type enum('Video','Slides','TextBook','Supplement','Others') not null,
     url text not null,
     uploaded_time datetime not null,
-    foreign key (course_id) references Courses(course_id)
+    foreign key (course_id) references Courses(course_id) on update cascade on delete cascade
 );
 
 -- Grades
@@ -207,9 +207,520 @@ create table if not exists Grades(
     earned_score int not null,
     feedback text,
     graded_at timestamp not null,
-    foreign key (ykpt) references Students(ykpt),
-    foreign key (assessment_id) references Assessments(assessment_id)
+    foreign key (ykpt) references Students(ykpt) on update cascade on delete cascade,
+    foreign key (assessment_id) references Assessments(assessment_id) on update cascade on delete cascade
 );
+
+-- =============================================
+-- CHECK CONSTRAINTS
+-- =============================================
+
+-- Terms: end_date must be after start_date
+ALTER TABLE Terms ADD CONSTRAINT chk_terms_dates
+    CHECK (end_date IS NULL OR end_date > start_date);
+
+-- Students: dob must be in the past
+ALTER TABLE Students ADD CONSTRAINT chk_students_dob
+    CHECK (dob < CURDATE());
+
+-- Students: telephone must start with '09'
+ALTER TABLE Students ADD CONSTRAINT chk_students_phone
+    CHECK (telephone LIKE '09%');
+
+-- Instructors: telephone must start with '09'
+ALTER TABLE Instructors ADD CONSTRAINT chk_instructors_phone
+    CHECK (telephone LIKE '09%');
+
+-- Courses: end_date must be after start_date
+ALTER TABLE Courses ADD CONSTRAINT chk_courses_dates
+    CHECK (end_date IS NULL OR end_date > start_date);
+
+-- Assessments: assessment_score must be positive
+ALTER TABLE Assessments ADD CONSTRAINT chk_assessments_score
+    CHECK (assessment_score > 0);
+
+-- Grades: earned_score must be non-negative
+ALTER TABLE Grades ADD CONSTRAINT chk_grades_score
+    CHECK (earned_score >= 0);
+
+-- Grades: earned_score cannot exceed assessment score
+ALTER TABLE Grades ADD CONSTRAINT chk_grades_score_max
+    CHECK (earned_score <= (SELECT assessment_score FROM Assessments WHERE assessment_id = Grades.assessment_id));
+
+-- Attendance: time_left must be after time_arrived
+ALTER TABLE Attendance ADD CONSTRAINT chk_attendance_times
+    CHECK (time_left > time_arrived);
+
+-- Classes: end_time must be after start_time
+ALTER TABLE Classes ADD CONSTRAINT chk_classes_times
+    CHECK (end_time IS NULL OR end_time > start_time);
+
+-- =============================================
+-- INDEXES
+-- =============================================
+
+-- Students indexes
+CREATE INDEX idx_students_term ON Students(term_id);
+CREATE INDEX idx_students_name ON Students(last_name, first_name);
+
+-- Parents index
+CREATE INDEX idx_parents_student ON Parents(ykpt);
+
+-- Instructors indexes
+CREATE INDEX idx_instructors_dept ON Instructors(department_id);
+CREATE INDEX idx_instructors_name ON Instructors(last_name, first_name);
+
+-- Courses indexes
+CREATE INDEX idx_courses_term ON Courses(term_id);
+CREATE INDEX idx_courses_dept ON Courses(department_id);
+CREATE INDEX idx_courses_name ON Courses(course_name);
+
+-- Lectures indexes
+CREATE INDEX idx_lectures_course ON Lectures(course_id);
+CREATE INDEX idx_lectures_instructor ON Lectures(instructor_id);
+CREATE INDEX idx_lectures_section ON Lectures(section_id);
+CREATE INDEX idx_lectures_term ON Lectures(term_id);
+
+-- Classes indexes
+CREATE INDEX idx_classes_lecture ON Classes(lecture_id);
+CREATE INDEX idx_classes_room ON Classes(room_id);
+CREATE INDEX idx_classes_date ON Classes(class_date);
+
+-- Enrollments indexes
+CREATE INDEX idx_enrollments_student ON Enrollments(ykpt);
+CREATE INDEX idx_enrollments_course ON Enrollments(course_id);
+CREATE INDEX idx_enrollments_term ON Enrollments(term_id);
+CREATE INDEX idx_enrollments_status ON Enrollments(completion_status);
+
+-- Assessments indexes
+CREATE INDEX idx_assessments_course ON Assessments(course_id);
+CREATE INDEX idx_assessments_type ON Assessments(assessment_type);
+CREATE INDEX idx_assessments_due ON Assessments(due_date);
+CREATE INDEX idx_assessments_status ON Assessments(completion_status);
+
+-- Announcements indexes
+CREATE INDEX idx_announcements_course ON Announcements(course_id);
+CREATE INDEX idx_announcements_instructor ON Announcements(instructor_id);
+CREATE INDEX idx_announcements_date ON Announcements(announced_at);
+
+-- Attendance indexes
+CREATE INDEX idx_attendance_student ON Attendance(ykpt);
+CREATE INDEX idx_attendance_class ON Attendance(class_id);
+
+-- Resources indexes
+CREATE INDEX idx_resources_course ON Resources(course_id);
+CREATE INDEX idx_resources_type ON Resources(resource_type);
+
+-- Grades indexes
+CREATE INDEX idx_grades_student ON Grades(ykpt);
+CREATE INDEX idx_grades_assessment ON Grades(assessment_id);
+
+-- Sections indexes
+CREATE INDEX idx_sections_term ON Sections(term_id);
+CREATE INDEX idx_sections_room ON Sections(room_id);
+
+-- =============================================
+-- VIEWS
+-- =============================================
+
+-- View: Student Grade Summary
+CREATE VIEW vw_student_grade_summary AS
+SELECT
+    s.ykpt,
+    CONCAT(s.first_name, ' ', COALESCE(s.middle_name, ''), ' ', s.last_name) AS student_name,
+    c.course_name,
+    a.assessment_name,
+    a.assessment_type,
+    a.assessment_score AS max_score,
+    g.earned_score,
+    ROUND((g.earned_score / a.assessment_score) * 100, 2) AS percentage,
+    g.feedback,
+    g.graded_at
+FROM Grades g
+JOIN Students s ON g.ykpt = s.ykpt
+JOIN Assessments a ON g.assessment_id = a.assessment_id
+JOIN Courses c ON a.course_id = c.course_id;
+
+-- View: Course Enrollment Statistics
+CREATE VIEW vw_course_enrollment_stats AS
+SELECT
+    c.course_id,
+    c.course_name,
+    d.department_name,
+    t.semester_name,
+    t.academic_year,
+    COUNT(e.enrollment_id) AS total_enrollments,
+    SUM(CASE WHEN e.completion_status = 'Completed' THEN 1 ELSE 0 END) AS completed,
+    SUM(CASE WHEN e.completion_status = 'In Progress' THEN 1 ELSE 0 END) AS in_progress,
+    SUM(CASE WHEN e.completion_status = 'Not Started' THEN 1 ELSE 0 END) AS not_started
+FROM Courses c
+JOIN Departments d ON c.department_id = d.department_id
+JOIN Terms t ON c.term_id = t.term_id
+LEFT JOIN Enrollments e ON c.course_id = e.course_id
+GROUP BY c.course_id, c.course_name, d.department_name, t.semester_name, t.academic_year;
+
+-- View: Student Attendance Summary
+CREATE VIEW vw_student_attendance_summary AS
+SELECT
+    s.ykpt,
+    CONCAT(s.first_name, ' ', COALESCE(s.middle_name, ''), ' ', s.last_name) AS student_name,
+    COUNT(a.attendance_id) AS total_classes,
+    SUM(CASE WHEN a.time_arrived <= c.start_time THEN 1 ELSE 0 END) AS on_time,
+    SUM(CASE WHEN a.time_arrived > c.start_time THEN 1 ELSE 0 END) AS late,
+    ROUND(SUM(CASE WHEN a.time_arrived <= c.start_time THEN 1 ELSE 0 END) / COUNT(a.attendance_id) * 100, 2) AS attendance_rate
+FROM Students s
+JOIN Attendance a ON s.ykpt = a.ykpt
+JOIN Classes c ON a.class_id = c.class_id
+GROUP BY s.ykpt, s.first_name, s.middle_name, s.last_name;
+
+-- View: Instructor Workload
+CREATE VIEW vw_instructor_workload AS
+SELECT
+    i.instructor_id,
+    CONCAT(i.first_name, ' ', COALESCE(i.middle_name, ''), ' ', i.last_name) AS instructor_name,
+    d.department_name,
+    COUNT(DISTINCT l.course_id) AS courses_taught,
+    COUNT(l.lecture_id) AS total_lectures,
+    COUNT(DISTINCT cl.class_id) AS total_classes
+FROM Instructors i
+JOIN Departments d ON i.department_id = d.department_id
+LEFT JOIN Lectures l ON i.instructor_id = l.instructor_id
+LEFT JOIN Classes cl ON l.lecture_id = cl.lecture_id
+GROUP BY i.instructor_id, i.first_name, i.middle_name, i.last_name, d.department_name;
+
+-- View: Department Performance
+CREATE VIEW vw_department_performance AS
+SELECT
+    d.department_id,
+    d.department_name,
+    COUNT(DISTINCT c.course_id) AS total_courses,
+    COUNT(DISTINCT e.ykpt) AS total_students,
+    ROUND(AVG(g.earned_score), 2) AS avg_score,
+    ROUND(SUM(CASE WHEN g.earned_score >= 60 THEN 1 ELSE 0 END) / COUNT(g.grade_id) * 100, 2) AS pass_rate
+FROM Departments d
+LEFT JOIN Courses c ON d.department_id = c.department_id
+LEFT JOIN Enrollments e ON c.course_id = e.course_id
+LEFT JOIN Grades g ON e.ykpt = g.ykpt
+GROUP BY d.department_id, d.department_name;
+
+-- View: Upcoming Deadlines
+CREATE VIEW vw_upcoming_deadlines AS
+SELECT
+    a.assessment_id,
+    a.assessment_name,
+    a.assessment_type,
+    a.due_date,
+    a.assessment_score,
+    c.course_name,
+    CONCAT(i.first_name, ' ', COALESCE(i.middle_name, ''), ' ', i.last_name) AS instructor_name,
+    a.completion_status
+FROM Assessments a
+JOIN Courses c ON a.course_id = c.course_id
+JOIN Lectures l ON c.course_id = l.course_id
+JOIN Instructors i ON l.instructor_id = i.instructor_id
+WHERE a.due_date >= CURDATE()
+ORDER BY a.due_date ASC;
+
+-- =============================================
+-- TRIGGERS
+-- =============================================
+
+-- Trigger: Auto-update assessment completion status when all students are graded
+DELIMITER //
+CREATE TRIGGER trg_update_assessment_status
+AFTER INSERT ON Grades
+FOR EACH ROW
+BEGIN
+    DECLARE total_enrolled INT;
+    DECLARE total_graded INT;
+    DECLARE assessment_max_score INT;
+
+    -- Get total enrolled students for this assessment's course
+    SELECT COUNT(*) INTO total_enrolled
+    FROM Enrollments
+    WHERE course_id = (SELECT course_id FROM Assessments WHERE assessment_id = NEW.assessment_id);
+
+    -- Get total graded students for this assessment
+    SELECT COUNT(*) INTO total_graded
+    FROM Grades
+    WHERE assessment_id = NEW.assessment_id;
+
+    -- Update assessment status if all students are graded
+    IF total_graded >= total_enrolled THEN
+        UPDATE Assessments
+        SET completion_status = 'Completed'
+        WHERE assessment_id = NEW.assessment_id;
+    ELSEIF total_graded > 0 THEN
+        UPDATE Assessments
+        SET completion_status = 'In Progress'
+        WHERE assessment_id = NEW.assessment_id;
+    END IF;
+END //
+
+-- Trigger: Auto-update student enrollment status based on grades
+CREATE TRIGGER trg_update_enrollment_status
+AFTER INSERT ON Grades
+FOR EACH ROW
+BEGIN
+    DECLARE total_assessments INT;
+    DECLARE graded_assessments INT;
+    DECLARE course_id_var INT;
+
+    -- Get course_id from assessment
+    SELECT course_id INTO course_id_var
+    FROM Assessments
+    WHERE assessment_id = NEW.assessment_id;
+
+    -- Get total assessments for this course
+    SELECT COUNT(*) INTO total_assessments
+    FROM Assessments
+    WHERE course_id = course_id_var;
+
+    -- Get graded assessments for this student in this course
+    SELECT COUNT(*) INTO graded_assessments
+    FROM Grades g
+    JOIN Assessments a ON g.assessment_id = a.assessment_id
+    WHERE g.ykpt = NEW.ykpt AND a.course_id = course_id_var;
+
+    -- Update enrollment status
+    IF graded_assessments >= total_assessments THEN
+        UPDATE Enrollments
+        SET completion_status = 'Completed'
+        WHERE ykpt = NEW.ykpt AND course_id = course_id_var;
+    ELSEIF graded_assessments > 0 THEN
+        UPDATE Enrollments
+        SET completion_status = 'In Progress'
+        WHERE ykpt = NEW.ykpt AND course_id = course_id_var;
+    END IF;
+END //
+
+-- Trigger: Validate attendance times
+CREATE TRIGGER trg_validate_attendance
+BEFORE INSERT ON Attendance
+FOR EACH ROW
+BEGIN
+    DECLARE class_start TIMESTAMP;
+    DECLARE class_end TIMESTAMP;
+
+    SELECT start_time, end_time INTO class_start, class_end
+    FROM Classes
+    WHERE class_id = NEW.class_id;
+
+    -- Set arrival time to class start if earlier
+    IF NEW.time_arrived < class_start THEN
+        SET NEW.time_arrived = class_start;
+    END IF;
+
+    -- Set leave time to class end if later
+    IF NEW.time_left > class_end AND class_end IS NOT NULL THEN
+        SET NEW.time_left = class_end;
+    END IF;
+END //
+
+-- Trigger: Log grade changes (audit trail)
+CREATE TABLE IF NOT EXISTS Grade_Audit_Log (
+    log_id INT AUTO_INCREMENT PRIMARY KEY,
+    grade_id INT,
+    ykpt INT,
+    assessment_id INT,
+    old_score INT,
+    new_score INT,
+    changed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    changed_by VARCHAR(255)
+) //
+
+CREATE TRIGGER trg_grade_audit
+AFTER UPDATE ON Grades
+FOR EACH ROW
+BEGIN
+    INSERT INTO Grade_Audit_Log (grade_id, ykpt, assessment_id, old_score, new_score, changed_by)
+    VALUES (NEW.grade_id, NEW.ykpt, NEW.assessment_id, OLD.earned_score, NEW.earned_score, CURRENT_USER());
+END //
+
+-- Trigger: Auto-set term as inactive when end_date passes
+CREATE TRIGGER trg_auto_deactivate_term
+BEFORE UPDATE ON Terms
+FOR EACH ROW
+BEGIN
+    IF NEW.end_date < CURDATE() AND NEW.is_active = 1 THEN
+        SET NEW.is_active = 0;
+    END IF;
+END //
+
+DELIMITER ;
+
+-- =============================================
+-- STORED PROCEDURES
+-- =============================================
+
+DELIMITER //
+
+-- Procedure: Get student GPA
+CREATE PROCEDURE sp_get_student_gpa(IN p_ykpt INT)
+BEGIN
+    SELECT
+        s.ykpt,
+        CONCAT(s.first_name, ' ', COALESCE(s.middle_name, ''), ' ', s.last_name) AS student_name,
+        COUNT(g.grade_id) AS total_assessments,
+        ROUND(AVG(g.earned_score), 2) AS average_score,
+        ROUND(SUM(g.earned_score) / SUM(a.assessment_score) * 100, 2) AS overall_percentage
+    FROM Students s
+    LEFT JOIN Grades g ON s.ykpt = g.ykpt
+    LEFT JOIN Assessments a ON g.assessment_id = a.assessment_id
+    WHERE s.ykpt = p_ykpt
+    GROUP BY s.ykpt, s.first_name, s.middle_name, s.last_name;
+END //
+
+-- Procedure: Get course students with grades
+CREATE PROCEDURE sp_get_course_grades(IN p_course_id INT)
+BEGIN
+    SELECT
+        s.ykpt,
+        CONCAT(s.first_name, ' ', COALESCE(s.middle_name, ''), ' ', s.last_name) AS student_name,
+        a.assessment_name,
+        a.assessment_type,
+        a.assessment_score AS max_score,
+        COALESCE(g.earned_score, 0) AS earned_score,
+        g.feedback
+    FROM Students s
+    JOIN Enrollments e ON s.ykpt = e.ykpt
+    LEFT JOIN Grades g ON s.ykpt = g.ykpt
+    LEFT JOIN Assessments a ON g.assessment_id = a.assessment_id AND a.course_id = p_course_id
+    WHERE e.course_id = p_course_id
+    ORDER BY s.last_name, s.first_name;
+END //
+
+-- Procedure: Get instructor schedule
+CREATE PROCEDURE sp_get_instructor_schedule(IN p_instructor_id INT)
+BEGIN
+    SELECT
+        l.lecture_name,
+        c.course_name,
+        cl.class_date,
+        cl.start_time,
+        cl.end_time,
+        r.room_name,
+        r.building_name,
+        sec.section_name
+    FROM Lectures l
+    JOIN Courses c ON l.course_id = c.course_id
+    JOIN Classes cl ON l.lecture_id = cl.lecture_id
+    JOIN Room r ON cl.room_id = r.room_id
+    JOIN Sections sec ON l.section_id = sec.section_id
+    WHERE l.instructor_id = p_instructor_id
+    ORDER BY cl.class_date, cl.start_time;
+END //
+
+-- Procedure: Enroll student in course
+CREATE PROCEDURE sp_enroll_student(
+    IN p_ykpt INT,
+    IN p_course_id INT,
+    OUT p_result VARCHAR(255)
+)
+BEGIN
+    DECLARE v_term_id INT;
+    DECLARE v_enrollment_exists INT;
+
+    -- Get term_id from course
+    SELECT term_id INTO v_term_id
+    FROM Courses
+    WHERE course_id = p_course_id;
+
+    -- Check if already enrolled
+    SELECT COUNT(*) INTO v_enrollment_exists
+    FROM Enrollments
+    WHERE ykpt = p_ykpt AND course_id = p_course_id;
+
+    IF v_enrollment_exists > 0 THEN
+        SET p_result = 'Student already enrolled in this course';
+    ELSE
+        INSERT INTO Enrollments (ykpt, term_id, course_id, completion_status)
+        VALUES (p_ykpt, v_term_id, p_course_id, 'Not Started');
+        SET p_result = 'Student successfully enrolled';
+    END IF;
+END //
+
+-- Procedure: Submit grade
+CREATE PROCEDURE sp_submit_grade(
+    IN p_ykpt INT,
+    IN p_assessment_id INT,
+    IN p_earned_score INT,
+    IN p_feedback TEXT,
+    OUT p_result VARCHAR(255)
+)
+BEGIN
+    DECLARE v_max_score INT;
+    DECLARE v_grade_exists INT;
+
+    -- Get max score
+    SELECT assessment_score INTO v_max_score
+    FROM Assessments
+    WHERE assessment_id = p_assessment_id;
+
+    -- Check if grade already exists
+    SELECT COUNT(*) INTO v_grade_exists
+    FROM Grades
+    WHERE ykpt = p_ykpt AND assessment_id = p_assessment_id;
+
+    IF p_earned_score < 0 OR p_earned_score > v_max_score THEN
+        SET p_result = CONCAT('Score must be between 0 and ', v_max_score);
+    ELSEIF v_grade_exists > 0 THEN
+        UPDATE Grades
+        SET earned_score = p_earned_score, feedback = p_feedback, graded_at = CURRENT_TIMESTAMP
+        WHERE ykpt = p_ykpt AND assessment_id = p_assessment_id;
+        SET p_result = 'Grade updated successfully';
+    ELSE
+        INSERT INTO Grades (ykpt, assessment_id, earned_score, feedback, graded_at)
+        VALUES (p_ykpt, p_assessment_id, p_earned_score, p_feedback, CURRENT_TIMESTAMP);
+        SET p_result = 'Grade submitted successfully';
+    END IF;
+END //
+
+-- Procedure: Get attendance report
+CREATE PROCEDURE sp_get_attendance_report(IN p_ykpt INT)
+BEGIN
+    SELECT
+        c.course_name,
+        cl.class_date,
+        cl.start_time AS class_start,
+        a.time_arrived,
+        a.time_left,
+        CASE
+            WHEN a.time_arrived <= cl.start_time THEN 'On Time'
+            ELSE 'Late'
+        END AS arrival_status,
+        TIMESTAMPDIFF(MINUTE, a.time_arrived, a.time_left) AS duration_minutes
+    FROM Attendance a
+    JOIN Classes cl ON a.class_id = cl.class_id
+    JOIN Lectures l ON cl.lecture_id = l.lecture_id
+    JOIN Courses c ON l.course_id = c.course_id
+    WHERE a.ykpt = p_ykpt
+    ORDER BY cl.class_date DESC;
+END //
+
+-- Procedure: Get class statistics
+CREATE PROCEDURE sp_get_class_stats(IN p_class_id INT)
+BEGIN
+    SELECT
+        cl.class_id,
+        cl.class_date,
+        c.course_name,
+        l.lecture_name,
+        r.room_name,
+        COUNT(a.attendance_id) AS total_present,
+        SUM(CASE WHEN a.time_arrived <= cl.start_time THEN 1 ELSE 0 END) AS on_time_count,
+        SUM(CASE WHEN a.time_arrived > cl.start_time THEN 1 ELSE 0 END) AS late_count,
+        ROUND(AVG(TIMESTAMPDIFF(MINUTE, a.time_arrived, a.time_left)), 2) AS avg_duration_minutes
+    FROM Classes cl
+    JOIN Lectures l ON cl.lecture_id = l.lecture_id
+    JOIN Courses c ON l.course_id = c.course_id
+    JOIN Room r ON cl.room_id = r.room_id
+    LEFT JOIN Attendance a ON cl.class_id = a.class_id
+    WHERE cl.class_id = p_class_id
+    GROUP BY cl.class_id, cl.class_date, c.course_name, l.lecture_name, r.room_name;
+END //
+
+DELIMITER ;
 
 -- Inserting UCSY Departments and Faculties
 INSERT INTO Departments (department_id, department_name) VALUES 
