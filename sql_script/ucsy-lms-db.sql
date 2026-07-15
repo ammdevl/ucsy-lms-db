@@ -1,6 +1,7 @@
 -- Database Design for UCSY LMS
 -- File - ucsy_lms_db.sql
 -- Version: v1.0
+-- Platform: Ubuntu 24.04
 -- License: MIT License
 
 -- Copyright (c) 2026 Aung Myint Myat, University of Computer Studies Yangon. All Rights Reserved
@@ -33,8 +34,8 @@ create table if not exists Departments(
     department_name varchar(255) not null
 );
 
--- Room
-create table if not exists Room(
+-- Rooms
+create table if not exists Rooms(
 	room_id int primary key,
     room_name varchar(255) not null,
     building_name enum('A','B','C','D','E','F','Ext1','Ext2') not null
@@ -47,7 +48,8 @@ create table if not exists Terms(
     academic_year varchar(9) not null,
     is_active boolean not null default 0,
     start_date date not null,
-    end_date date
+    end_date date,
+    CONSTRAINT chk_academic_year_format CHECK (academic_year REGEXP '^[0-9]{4}-[0-9]{4}$')
 );
 
 -- Sections
@@ -56,11 +58,13 @@ create table if not exists Sections(
     term_id int not null,
     section_name varchar(255) not null,
     room_id int not null,
-    foreign key (room_id) references Room(room_id) on update cascade on delete restrict,
+    foreign key (room_id) references Rooms(room_id) on update cascade on delete restrict,
     foreign key (term_id) references Terms(term_id) on update cascade on delete restrict
 );
 
 -- Students
+-- NOTE: term_id is denormalized for quick lookup of a student's current term.
+-- Source of truth should be the latest Enrollments record for the student.
 create table if not exists Students(
 	ykpt int primary key,
     term_id int not null,
@@ -70,8 +74,8 @@ create table if not exists Students(
     dob date not null,
     edu_mail varchar(255) not null unique,
     telephone varchar(15) not null unique,
-    password varchar(255) not null,
-    created_at timestamp default current_timestamp,
+    password_hash varchar(255) not null,
+    created_at timestamp not null default current_timestamp,
     foreign key (term_id) references Terms(term_id) on update cascade on delete restrict
 );
 
@@ -81,9 +85,9 @@ create table if not exists Parents(
     ykpt int not null,
     father_name varchar(255) not null,
     mother_name varchar(255) not null,
-    email varchar(255) not null,
+    email varchar(255) not null unique,
     telephone varchar(15) not null,
-    foreign key (ykpt) references Students(ykpt) on update cascade on delete cascade
+    foreign key (ykpt) references Students(ykpt) on update cascade on delete restrict
 );
 
 -- Instructors
@@ -95,7 +99,7 @@ create table if not exists Instructors(
     department_id int not null,
     edu_mail varchar(255) not null unique,
     telephone varchar(15) not null unique,
-    password varchar(255) not null,
+    password_hash varchar(255) not null,
     created_at timestamp not null default current_timestamp,
     foreign key (department_id) references Departments(department_id) on update cascade on delete restrict
 );
@@ -114,6 +118,7 @@ create table if not exists Courses(
 );
 
 -- Lectures
+-- NOTE: term_id is denormalized for quick lookup. Derivable via Courses(term_id).
 create table if not exists Lectures(
 	lecture_id int primary key,
     term_id int not null,
@@ -122,6 +127,7 @@ create table if not exists Lectures(
     section_id int not null,
     lecture_name varchar(255) not null,
     lecture_description text,
+    UNIQUE KEY uq_lecture (course_id, section_id, instructor_id, term_id),
     foreign key (term_id) references Terms(term_id) on update cascade on delete restrict,
     foreign key (course_id) references Courses(course_id) on update cascade on delete cascade,
     foreign key (instructor_id) references Instructors(instructor_id) on update cascade on delete restrict,
@@ -134,10 +140,10 @@ create table if not exists Classes(
     lecture_id int not null,
     room_id int not null,
     class_date date not null,
-    start_time timestamp not null,
-    end_time timestamp,
+    start_time time not null,
+    end_time time,
     foreign key (lecture_id) references Lectures(lecture_id) on update cascade on delete cascade,
-    foreign key (room_id) references Room(room_id) on update cascade on delete restrict
+    foreign key (room_id) references Rooms(room_id) on update cascade on delete restrict
 );
 
 
@@ -149,6 +155,7 @@ create table if not exists Enrollments(
     course_id int not null,
     enrolled_at timestamp not null default current_timestamp,
     completion_status enum('Not Started','In Progress','Completed') default 'Not Started',
+    UNIQUE KEY uq_enrollment (ykpt, course_id),
     foreign key (term_id) references Terms(term_id) on update cascade on delete restrict,
     foreign key (ykpt) references Students(ykpt) on update cascade on delete cascade,
     foreign key (course_id) references Courses(course_id) on update cascade on delete cascade
@@ -209,6 +216,18 @@ create table if not exists Grades(
     graded_at timestamp not null,
     foreign key (ykpt) references Students(ykpt) on update cascade on delete cascade,
     foreign key (assessment_id) references Assessments(assessment_id) on update cascade on delete cascade
+);
+
+-- Grade Audit Log (audit trail for grade changes)
+CREATE TABLE IF NOT EXISTS Grade_Audit_Log (
+    log_id INT AUTO_INCREMENT PRIMARY KEY,
+    grade_id INT,
+    ykpt INT,
+    assessment_id INT,
+    old_score INT,
+    new_score INT,
+    changed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    changed_by VARCHAR(255)
 );
 
 -- =============================================
@@ -274,13 +293,13 @@ CREATE INDEX idx_classes_date ON Classes(class_date);
 CREATE INDEX idx_enrollments_student ON Enrollments(ykpt);
 CREATE INDEX idx_enrollments_course ON Enrollments(course_id);
 CREATE INDEX idx_enrollments_term ON Enrollments(term_id);
-CREATE INDEX idx_enrollments_status ON Enrollments(completion_status);
+-- NOTE: idx_enrollments_status removed (low cardinality: 3 values)
 
 -- Assessments indexes
 CREATE INDEX idx_assessments_course ON Assessments(course_id);
-CREATE INDEX idx_assessments_type ON Assessments(assessment_type);
+-- NOTE: idx_assessments_type removed (low cardinality: 5 values)
 CREATE INDEX idx_assessments_due ON Assessments(due_date);
-CREATE INDEX idx_assessments_status ON Assessments(completion_status);
+-- NOTE: idx_assessments_status removed (low cardinality: 3 values)
 
 -- Announcements indexes
 CREATE INDEX idx_announcements_course ON Announcements(course_id);
@@ -293,11 +312,12 @@ CREATE INDEX idx_attendance_class ON Attendance(class_id);
 
 -- Resources indexes
 CREATE INDEX idx_resources_course ON Resources(course_id);
-CREATE INDEX idx_resources_type ON Resources(resource_type);
+-- NOTE: idx_resources_type removed (low cardinality: 5 values)
 
 -- Grades indexes
 CREATE INDEX idx_grades_student ON Grades(ykpt);
 CREATE INDEX idx_grades_assessment ON Grades(assessment_id);
+CREATE INDEX idx_grades_assessment_score ON Grades(ykpt, assessment_id, earned_score);
 
 -- Sections indexes
 CREATE INDEX idx_sections_term ON Sections(term_id);
@@ -349,9 +369,9 @@ SELECT
     s.ykpt,
     CONCAT(s.first_name, ' ', COALESCE(s.middle_name, ''), ' ', s.last_name) AS student_name,
     COUNT(a.attendance_id) AS total_classes,
-    SUM(CASE WHEN a.time_arrived <= c.start_time THEN 1 ELSE 0 END) AS on_time,
-    SUM(CASE WHEN a.time_arrived > c.start_time THEN 1 ELSE 0 END) AS late,
-    ROUND(SUM(CASE WHEN a.time_arrived <= c.start_time THEN 1 ELSE 0 END) / COUNT(a.attendance_id) * 100, 2) AS attendance_rate
+    SUM(CASE WHEN TIME(a.time_arrived) <= c.start_time THEN 1 ELSE 0 END) AS on_time,
+    SUM(CASE WHEN TIME(a.time_arrived) > c.start_time THEN 1 ELSE 0 END) AS late,
+    ROUND(SUM(CASE WHEN TIME(a.time_arrived) <= c.start_time THEN 1 ELSE 0 END) / COUNT(a.attendance_id) * 100, 2) AS attendance_rate
 FROM Students s
 JOIN Attendance a ON s.ykpt = a.ykpt
 JOIN Classes c ON a.class_id = c.class_id
@@ -517,36 +537,25 @@ CREATE TRIGGER trg_validate_attendance
 BEFORE INSERT ON Attendance
 FOR EACH ROW
 BEGIN
-    DECLARE class_start TIMESTAMP;
-    DECLARE class_end TIMESTAMP;
+    DECLARE class_start TIME;
+    DECLARE class_end TIME;
 
     SELECT start_time, end_time INTO class_start, class_end
     FROM Classes
     WHERE class_id = NEW.class_id;
 
-    -- Set arrival time to class start if earlier
-    IF NEW.time_arrived < class_start THEN
-        SET NEW.time_arrived = class_start;
+    -- Set arrival time to class start if earlier (compare TIME portions)
+    IF TIME(NEW.time_arrived) < class_start THEN
+        SET NEW.time_arrived = TIMESTAMP(DATE(NEW.time_arrived), class_start);
     END IF;
 
-    -- Set leave time to class end if later
-    IF NEW.time_left > class_end AND class_end IS NOT NULL THEN
-        SET NEW.time_left = class_end;
+    -- Set leave time to class end if later (compare TIME portions)
+    IF TIME(NEW.time_left) > class_end AND class_end IS NOT NULL THEN
+        SET NEW.time_left = TIMESTAMP(DATE(NEW.time_left), class_end);
     END IF;
 END //
 
 -- Trigger: Log grade changes (audit trail)
-CREATE TABLE IF NOT EXISTS Grade_Audit_Log (
-    log_id INT AUTO_INCREMENT PRIMARY KEY,
-    grade_id INT,
-    ykpt INT,
-    assessment_id INT,
-    old_score INT,
-    new_score INT,
-    changed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    changed_by VARCHAR(255)
-) //
-
 CREATE TRIGGER trg_grade_audit
 AFTER UPDATE ON Grades
 FOR EACH ROW
@@ -623,7 +632,7 @@ BEGIN
     FROM Lectures l
     JOIN Courses c ON l.course_id = c.course_id
     JOIN Classes cl ON l.lecture_id = cl.lecture_id
-    JOIN Room r ON cl.room_id = r.room_id
+    JOIN Rooms r ON cl.room_id = r.room_id
     JOIN Sections sec ON l.section_id = sec.section_id
     WHERE l.instructor_id = p_instructor_id
     ORDER BY cl.class_date, cl.start_time;
@@ -704,7 +713,7 @@ BEGIN
         a.time_arrived,
         a.time_left,
         CASE
-            WHEN a.time_arrived <= cl.start_time THEN 'On Time'
+            WHEN TIME(a.time_arrived) <= cl.start_time THEN 'On Time'
             ELSE 'Late'
         END AS arrival_status,
         TIMESTAMPDIFF(MINUTE, a.time_arrived, a.time_left) AS duration_minutes
@@ -726,13 +735,13 @@ BEGIN
         l.lecture_name,
         r.room_name,
         COUNT(a.attendance_id) AS total_present,
-        SUM(CASE WHEN a.time_arrived <= cl.start_time THEN 1 ELSE 0 END) AS on_time_count,
-        SUM(CASE WHEN a.time_arrived > cl.start_time THEN 1 ELSE 0 END) AS late_count,
+        SUM(CASE WHEN TIME(a.time_arrived) <= cl.start_time THEN 1 ELSE 0 END) AS on_time_count,
+        SUM(CASE WHEN TIME(a.time_arrived) > cl.start_time THEN 1 ELSE 0 END) AS late_count,
         ROUND(AVG(TIMESTAMPDIFF(MINUTE, a.time_arrived, a.time_left)), 2) AS avg_duration_minutes
     FROM Classes cl
     JOIN Lectures l ON cl.lecture_id = l.lecture_id
     JOIN Courses c ON l.course_id = c.course_id
-    JOIN Room r ON cl.room_id = r.room_id
+    JOIN Rooms r ON cl.room_id = r.room_id
     LEFT JOIN Attendance a ON cl.class_id = a.class_id
     WHERE cl.class_id = p_class_id
     GROUP BY cl.class_id, cl.class_date, c.course_name, l.lecture_name, r.room_name;
@@ -754,7 +763,7 @@ INSERT INTO Departments (department_id, department_name) VALUES
 (10, 'Department of Research and Development');
 
 -- Inseting building and room name
-INSERT INTO Room (room_id, room_name, building_name) VALUES 
+INSERT INTO Rooms (room_id, room_name, building_name) VALUES 
 (1, 'A-001', 'A'), (2, 'A-002', 'A'), (3, 'A-003', 'A'), (4, 'A-004', 'A'), (5, 'A-005', 'A'),
 (6, 'A-201', 'A'), (7, 'A-202', 'A'), (8, 'A-203', 'A'), (9, 'A-204', 'A'), (10, 'A-205', 'A'),
 (11, 'B-001', 'B'), (12, 'B-002', 'B'), (13, 'B-003', 'B'), (14, 'B-004', 'B'), (15, 'B-005', 'B'),
@@ -809,7 +818,7 @@ INSERT INTO Sections (section_id, term_id, section_name, room_id) VALUES
 (55, 10, 'A', 55), (56, 10, 'B', 56), (57, 10, 'C', 57), (58, 10, 'D', 58), (59, 10, 'E', 59), (60, 10, 'F', 60);
 
 -- Inserting Students
-INSERT INTO Students (ykpt, term_id, first_name, middle_name, last_name, dob, edu_mail, telephone, password) VALUES
+INSERT INTO Students (ykpt, term_id, first_name, middle_name, last_name, dob, edu_mail, telephone, password_hash) VALUES
 (23000, 1, 'Kyaw', 'Htet', 'Khaung', '2004-01-05', 'kyawhtetkhaung@ucsy.edu.mm', '09400000001', 'pass23000'),
 (23001, 3, 'Khant', 'Thaw', 'Zin', '2004-02-10', 'khantthawzin@ucsy.edu.mm', '09400000002', 'pass23001'),
 (23002, 5, 'Paing', 'Zay', 'Aung', '2003-11-15', 'paingzayaung@ucsy.edu.mm', '09400000003', 'pass23002'),
@@ -855,7 +864,7 @@ INSERT INTO Students (ykpt, term_id, first_name, middle_name, last_name, dob, ed
 (23042, 5, 'Hein', 'Htet', 'Aung', '2004-10-30', 'heinhtetaung@ucsy.edu.mm', '09400000043', 'pass23042'),
 (23043, 7, 'Han', 'Linn', 'Htun', '2003-12-24', 'hanlinnhtun@ucsy.edu.mm', '09400000044', 'pass23043'),
 (23044, 1, 'Su', 'Su', 'Nyein', '2004-01-25', 'susunyein@ucsy.edu.mm', '09400000045', 'pass23044'),
-(23045, 4, 'Hein', 'Zaw', 'Htet', '2004-09-15', 'heinzawhtet@ucsy.edu.mm', '09400000046', 'pass230446'),
+(23045, 4, 'Hein', 'Zaw', 'Htet', '2004-09-15', 'heinzawhtet@ucsy.edu.mm', '09400000046', 'pass23045'),
 (23046, 8, 'San', 'Sit', 'Lai', '2003-08-08', 'sansitlai@ucsy.edu.mm', '09400000047', 'pass23046'),
 (23047, 2, 'Khin', 'Khin', 'Chaw', '2004-04-17', 'khinkhinchaw@ucsy.edu.mm', '09400000048', 'pass23047'),
 (23048, 9, 'Kaung', 'Set', 'Wai Min', '2004-06-06', 'kaungsetwaimin@ucsy.edu.mm', '09400000049', 'pass23048'),
@@ -959,7 +968,7 @@ INSERT INTO Parents (parent_id, ykpt, father_name, mother_name, email, telephone
 (1032, 23031, 'U Kyaw Thant', 'Daw Min Min', 'kyawthant@gmail.com', '09500000032'),
 (1033, 23032, 'U Mon Khaing', 'Daw Ei Ei', 'monkhaing@gmail.com', '09500000033'),
 (1034, 23033, 'U Naing Win', 'Daw Thazin', 'naingwin@gmail.com', '09500000034'),
-(1035, 23034, 'U Phyo Aung', 'Daw Sandar', 'phyoaung@gmail.com', '09500000035'),
+(1035, 23034, 'U Phyo Aung', 'Daw Sandar', 'uphyoaung@gmail.com', '09500000035'),
 (1036, 23035, 'U Zaw Zaw', 'Daw Htet Htet', 'zawzaw@gmail.com', '09500000036'),
 (1037, 23036, 'U Thit Lwin', 'Daw Htoo Htoo', 'thitlwin@gmail.com', '09500000037'),
 (1038, 23037, 'U Wunna Ko', 'Daw Myat Thida', 'wunnako@gmail.com', '09500000038'),
@@ -982,7 +991,7 @@ INSERT INTO Parents (parent_id, ykpt, father_name, mother_name, email, telephone
 (1055, 23054, 'U Su Han', 'Daw Khaing Khaing', 'suhan@gmail.com', '09500000055'),
 (1056, 23055, 'U Thu Aung', 'Daw Htet Htet', 'thuaung@gmail.com', '09500000056'),
 (1057, 23056, 'U Htut Thaw', 'Daw Kaung Kaung', 'htutthaw@gmail.com', '09500000057'),
-(1058, 23057, 'U Naing Win', 'Daw Linn Linn', 'naingwin@gmail.com', '09500000058'),
+(1058, 23057, 'U Naing Win', 'Daw Linn Linn', 'unaingwin@gmail.com', '09500000058'),
 (1059, 23058, 'U Moe Htet', 'Daw Thinzar', 'moehtet@gmail.com', '09500000059'),
 (1060, 23059, 'U Khant Kyaw', 'Daw Aung Aung', 'khantkyaw@gmail.com', '09500000060'),
 (1061, 23060, 'U Ko Hlaing', 'Daw Zin Zin', 'kohlaing@gmail.com', '09500000061'),
@@ -1039,7 +1048,7 @@ INSERT INTO Parents (parent_id, ykpt, father_name, mother_name, email, telephone
 (1112, 23111, 'U Min Khant', 'Daw Myat Myat', 'minkhant2@gmail.com', '09500000112');
 
 -- Inserting Instructors
-INSERT INTO Instructors (instructor_id, first_name, middle_name, last_name, department_id, edu_mail, telephone, password) VALUES
+INSERT INTO Instructors (instructor_id, first_name, middle_name, last_name, department_id, edu_mail, telephone, password_hash) VALUES
 (1, 'Dr. Kyaw', 'Zay', 'Ya', 3, 'kyawzayya@ucsy.edu.mm', '092000001', 'pass_inst_1'),
 (2, 'Daw Aye', 'Aye', 'Win', 5, 'ayeayewin@ucsy.edu.mm', '092000002', 'pass_inst_2'),
 (3, 'Dr. Myo', 'Min', 'Tun', 1, 'myomintun@ucsy.edu.mm', '092000003', 'pass_inst_3'),
@@ -1290,76 +1299,76 @@ INSERT INTO Lectures (lecture_id, term_id, course_id, instructor_id, section_id,
 -- Inserting Classes
 INSERT INTO Classes (class_id, lecture_id, room_id, class_date, start_time, end_time) VALUES
 -- Building A (CS & CST Lectures)
-(1, 1, 1, '2026-03-02', '2026-03-02 09:00:00', '2026-03-02 11:00:00'),
-(2, 2, 2, '2026-03-02', '2026-03-02 09:00:00', '2026-03-02 11:00:00'),
-(3, 3, 6, '2026-03-02', '2026-03-02 13:00:00', '2026-03-02 15:00:00'),
-(4, 4, 7, '2026-03-02', '2026-03-02 13:00:00', '2026-03-02 15:00:00'),
-(5, 5, 3, '2026-03-03', '2026-03-03 09:00:00', '2026-03-03 11:00:00'),
-(6, 6, 8, '2026-03-03', '2026-03-03 13:00:00', '2026-03-03 15:00:00'),
-(7, 7, 4, '2026-03-04', '2026-03-04 09:00:00', '2026-03-04 11:00:00'),
-(8, 8, 9, '2026-03-04', '2026-03-04 13:00:00', '2026-03-04 15:00:00'),
-(9, 9, 5, '2026-03-05', '2026-03-05 09:00:00', '2026-03-05 11:00:00'),
-(10, 10, 10, '2026-03-05', '2026-03-05 13:00:00', '2026-03-05 15:00:00'),
+(1, 1, 1, '2026-03-02', '09:00:00', '11:00:00'),
+(2, 2, 2, '2026-03-02', '09:00:00', '11:00:00'),
+(3, 3, 6, '2026-03-02', '13:00:00', '15:00:00'),
+(4, 4, 7, '2026-03-02', '13:00:00', '15:00:00'),
+(5, 5, 3, '2026-03-03', '09:00:00', '11:00:00'),
+(6, 6, 8, '2026-03-03', '13:00:00', '15:00:00'),
+(7, 7, 4, '2026-03-04', '09:00:00', '11:00:00'),
+(8, 8, 9, '2026-03-04', '13:00:00', '15:00:00'),
+(9, 9, 5, '2026-03-05', '09:00:00', '11:00:00'),
+(10, 10, 10, '2026-03-05', '13:00:00', '15:00:00'),
 
 -- Building B (Information Science)
-(11, 11, 11, '2026-03-02', '2026-03-02 10:00:00', '2026-03-02 12:00:00'),
-(12, 12, 12, '2026-03-02', '2026-03-02 14:00:00', '2026-03-02 16:00:00'),
-(13, 13, 16, '2026-03-03', '2026-03-03 10:00:00', '2026-03-03 12:00:00'),
-(14, 14, 17, '2026-03-03', '2026-03-03 14:00:00', '2026-03-03 16:00:00'),
-(15, 15, 13, '2026-03-04', '2026-03-04 10:00:00', '2026-03-04 12:00:00'),
-(16, 16, 18, '2026-03-04', '2026-03-04 14:00:00', '2026-03-04 16:00:00'),
+(11, 11, 11, '2026-03-02', '10:00:00', '12:00:00'),
+(12, 12, 12, '2026-03-02', '14:00:00', '16:00:00'),
+(13, 13, 16, '2026-03-03', '10:00:00', '12:00:00'),
+(14, 14, 17, '2026-03-03', '14:00:00', '16:00:00'),
+(15, 15, 13, '2026-03-04', '10:00:00', '12:00:00'),
+(16, 16, 18, '2026-03-04', '14:00:00', '16:00:00'),
 
 -- Building C (Computing & English)
-(17, 17, 21, '2026-03-02', '2026-03-02 08:30:00', '2026-03-02 10:30:00'),
-(18, 18, 26, '2026-03-02', '2026-03-02 13:30:00', '2026-03-02 15:30:00'),
-(19, 19, 22, '2026-03-03', '2026-03-03 08:30:00', '2026-03-03 10:30:00'),
-(20, 20, 27, '2026-03-03', '2026-03-03 13:30:00', '2026-03-03 15:30:00'),
-(21, 21, 23, '2026-03-04', '2026-03-04 08:30:00', '2026-03-04 10:30:00'),
-(22, 22, 28, '2026-03-04', '2026-03-04 13:30:00', '2026-03-04 15:30:00'),
-(23, 23, 24, '2026-03-05', '2026-03-05 08:30:00', '2026-03-05 10:30:00'),
-(24, 24, 29, '2026-03-05', '2026-03-05 13:30:00', '2026-03-05 15:30:00'),
-(25, 25, 25, '2026-03-02', '2026-03-02 09:00:00', '2026-03-02 11:00:00'),
-(26, 26, 30, '2026-03-02', '2026-03-02 11:00:00', '2026-03-02 13:00:00'),
+(17, 17, 21, '2026-03-02', '08:30:00', '10:30:00'),
+(18, 18, 26, '2026-03-02', '13:30:00', '15:30:00'),
+(19, 19, 22, '2026-03-03', '08:30:00', '10:30:00'),
+(20, 20, 27, '2026-03-03', '13:30:00', '15:30:00'),
+(21, 21, 23, '2026-03-04', '08:30:00', '10:30:00'),
+(22, 22, 28, '2026-03-04', '13:30:00', '15:30:00'),
+(23, 23, 24, '2026-03-05', '08:30:00', '10:30:00'),
+(24, 24, 29, '2026-03-05', '13:30:00', '15:30:00'),
+(25, 25, 25, '2026-03-02', '09:00:00', '11:00:00'),
+(26, 26, 30, '2026-03-02', '11:00:00', '13:00:00'),
 
 -- Building D (Myanmar & Natural Science)
-(27, 27, 31, '2026-03-03', '2026-03-03 09:00:00', '2026-03-03 11:00:00'),
-(28, 28, 36, '2026-03-03', '2026-03-03 13:00:00', '2026-03-03 15:00:00'),
-(29, 29, 32, '2026-03-04', '2026-03-04 09:00:00', '2026-03-04 11:00:00'),
-(30, 30, 37, '2026-03-04', '2026-03-04 13:00:00', '2026-03-04 15:00:00'),
-(31, 31, 33, '2026-03-05', '2026-03-05 09:00:00', '2026-03-05 11:00:00'),
-(32, 32, 38, '2026-03-05', '2026-03-05 13:00:00', '2026-03-05 15:00:00'),
-(33, 33, 34, '2026-03-06', '2026-03-06 09:00:00', '2026-03-06 11:00:00'),
-(34, 34, 39, '2026-03-06', '2026-03-06 13:00:00', '2026-03-06 15:00:00'),
-(35, 35, 35, '2026-03-02', '2026-03-02 10:00:00', '2026-03-02 12:00:00'),
-(36, 36, 40, '2026-03-02', '2026-03-02 14:00:00', '2026-03-02 16:00:00'),
+(27, 27, 31, '2026-03-03', '09:00:00', '11:00:00'),
+(28, 28, 36, '2026-03-03', '13:00:00', '15:00:00'),
+(29, 29, 32, '2026-03-04', '09:00:00', '11:00:00'),
+(30, 30, 37, '2026-03-04', '13:00:00', '15:00:00'),
+(31, 31, 33, '2026-03-05', '09:00:00', '11:00:00'),
+(32, 32, 38, '2026-03-05', '13:00:00', '15:00:00'),
+(33, 33, 34, '2026-03-06', '09:00:00', '11:00:00'),
+(34, 34, 39, '2026-03-06', '13:00:00', '15:00:00'),
+(35, 35, 35, '2026-03-02', '10:00:00', '12:00:00'),
+(36, 36, 40, '2026-03-02', '14:00:00', '16:00:00'),
 
 -- Building E (IT Support & Maintenance)
-(37, 37, 41, '2026-03-03', '2026-03-03 08:00:00', '2026-03-03 10:00:00'),
-(38, 38, 46, '2026-03-03', '2026-03-03 10:00:00', '2026-03-03 12:00:00'),
-(39, 39, 42, '2026-03-04', '2026-03-04 08:00:00', '2026-03-04 10:00:00'),
-(40, 40, 47, '2026-03-04', '2026-03-04 10:00:00', '2026-03-04 12:00:00'),
-(41, 41, 43, '2026-03-05', '2026-03-05 08:00:00', '2026-03-05 10:00:00'),
-(42, 42, 48, '2026-03-05', '2026-03-05 10:00:00', '2026-03-05 12:00:00'),
-(43, 43, 44, '2026-03-06', '2026-03-06 08:00:00', '2026-03-06 10:00:00'),
-(44, 44, 49, '2026-03-06', '2026-03-06 10:00:00', '2026-03-06 12:00:00'),
-(45, 45, 45, '2026-03-02', '2026-03-02 11:00:00', '2026-03-02 13:00:00'),
-(46, 46, 50, '2026-03-02', '2026-03-02 13:00:00', '2026-03-02 15:00:00'),
+(37, 37, 41, '2026-03-03', '08:00:00', '10:00:00'),
+(38, 38, 46, '2026-03-03', '10:00:00', '12:00:00'),
+(39, 39, 42, '2026-03-04', '08:00:00', '10:00:00'),
+(40, 40, 47, '2026-03-04', '10:00:00', '12:00:00'),
+(41, 41, 43, '2026-03-05', '08:00:00', '10:00:00'),
+(42, 42, 48, '2026-03-05', '10:00:00', '12:00:00'),
+(43, 43, 44, '2026-03-06', '08:00:00', '10:00:00'),
+(44, 44, 49, '2026-03-06', '10:00:00', '12:00:00'),
+(45, 45, 45, '2026-03-02', '11:00:00', '13:00:00'),
+(46, 46, 50, '2026-03-02', '13:00:00', '15:00:00'),
 
 -- Building F & Ext (International Relations & R&D)
-(47, 47, 56, '2026-03-03', '2026-03-03 09:30:00', '2026-03-03 11:30:00'),
-(48, 48, 61, '2026-03-03', '2026-03-03 13:30:00', '2026-03-03 15:30:00'),
-(49, 49, 57, '2026-03-04', '2026-03-04 09:30:00', '2026-03-04 11:30:00'),
-(50, 50, 62, '2026-03-04', '2026-03-04 13:30:00', '2026-03-04 15:30:00'),
-(51, 51, 58, '2026-03-05', '2026-03-05 09:30:00', '2026-03-05 11:30:00'),
-(52, 52, 63, '2026-03-05', '2026-03-05 13:30:00', '2026-03-05 15:30:00'),
-(53, 53, 59, '2026-03-06', '2026-03-06 09:30:00', '2026-03-06 11:30:00'),
-(54, 54, 64, '2026-03-06', '2026-03-06 13:30:00', '2026-03-06 15:30:00'),
-(55, 55, 71, '2026-03-02', '2026-03-02 10:00:00', '2026-03-02 12:00:00'),
-(56, 56, 76, '2026-03-02', '2026-03-02 14:00:00', '2026-03-02 16:00:00'),
-(57, 57, 72, '2026-03-03', '2026-03-03 10:00:00', '2026-03-03 12:00:00'),
-(58, 58, 77, '2026-03-03', '2026-03-03 14:00:00', '2026-03-03 16:00:00'),
-(59, 59, 73, '2026-03-04', '2026-03-04 10:00:00', '2026-03-04 12:00:00'),
-(60, 60, 78, '2026-03-04', '2026-03-04 14:00:00', '2026-03-04 16:00:00');
+(47, 47, 56, '2026-03-03', '09:30:00', '11:30:00'),
+(48, 48, 61, '2026-03-03', '13:30:00', '15:30:00'),
+(49, 49, 57, '2026-03-04', '09:30:00', '11:30:00'),
+(50, 50, 62, '2026-03-04', '13:30:00', '15:30:00'),
+(51, 51, 58, '2026-03-05', '09:30:00', '11:30:00'),
+(52, 52, 63, '2026-03-05', '13:30:00', '15:30:00'),
+(53, 53, 59, '2026-03-06', '09:30:00', '11:30:00'),
+(54, 54, 64, '2026-03-06', '13:30:00', '15:30:00'),
+(55, 55, 71, '2026-03-02', '10:00:00', '12:00:00'),
+(56, 56, 76, '2026-03-02', '14:00:00', '16:00:00'),
+(57, 57, 72, '2026-03-03', '10:00:00', '12:00:00'),
+(58, 58, 77, '2026-03-03', '14:00:00', '16:00:00'),
+(59, 59, 73, '2026-03-04', '10:00:00', '12:00:00'),
+(60, 60, 78, '2026-03-04', '14:00:00', '16:00:00');
 
 -- Inserting Enrollments
 INSERT INTO Enrollments (enrollment_id, ykpt, term_id, course_id, enrolled_at, completion_status) VALUES
