@@ -355,13 +355,6 @@ While this is primarily an academic portfolio project, suggestions for improveme
 
 This repository is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.
 
-## 📧 Contact
-
-**Aung Myint Myat**
-
-
-
-
 ---
 
 <div align="center">
