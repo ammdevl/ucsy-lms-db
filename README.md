@@ -1,9 +1,9 @@
-## ⛃ Database Design for UCSY LMS
+## Database Design for UCSY LMS
 [![MIT License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![GitHub](https://img.shields.io/badge/GitHub-ammdevl-181717?logo=github)](https://github.com/ammdevl)[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](http://makeapullrequest.com)
 [![GitHub issues](https://img.shields.io/github/issues/ammdevl/ucsy-lms-db.svg)](https://github.com/ammdevl/ucsy-lms-db/issues)
 
-## 📋 Table of Contents
+## Table of Contents
 
 - [About](#-about)
 - [Repository Structure](#-repository-structure)
@@ -17,12 +17,12 @@
 - [License](#-license)
 - [Contact](#-contact)
 
-## 📖 About
+## About
 This repository documents the formal Database Design and Implementation for the University of Computer Studies, Yangon (UCSY) Learning Management System. It showcases a complete data modeling workflow—from initial requirement analysis and ER Diagramming to optimized SQL schema development.
 
 This project was created for the **Fundamental Database Management System (IS-201)** course, Faculty of Information Science, Semester III, 2025–2026 Academic Year.
 
-## 📁 Repository Structure
+## Repository Structure
 ```bash
 ucsy-lms-db/
 ├── design/
@@ -56,7 +56,7 @@ ucsy-lms-db/
 └── README.md
 ```
 
-## 🛠️ Technologies & Tools
+## Technologies & Tools
 | Category | Tool | Purpose |
 | --- | --- | --- |
 | Design | StarUML | Conceptual & Logical ER Diagrams |
@@ -64,7 +64,7 @@ ucsy-lms-db/
 | Publishing | LaTeX | Academic Documentation & Formatting |
 | Version Control | Git & GitHub | Version control and remote hosting |
 
-## 🚀 Getting Started
+## Getting Started
 
 ### Prerequisites
 - MySQL Server (v8.0 or compatible)
@@ -89,13 +89,13 @@ ucsy-lms-db/
 
 > **Note:** The script contains comprehensive seed data including 10 departments, 80 rooms, 10 terms, 60 sections, 112 students, 100 instructors, ~60 courses, and corresponding records across all other tables.
 
-## 📐 ER Diagram
+## ER Diagram
 
 ![ER Diagram - StarUML](docs/ucsy_lms_db_erd_staruml.png)
 
 The full ER diagram model can be opened in StarUML using the file at [`design/ucsy_lms_db_erd.mdj`](design/ucsy_lms_db_erd.mdj).
 
-## 📃 Database Design Details
+## Database Design Details
 
 The database includes **16 entities**: Departments, Room, Terms, Sections, Students, Parents, Instructors, Courses, Lectures, Classes, Enrollments, Assessments, Announcements, Attendance, Resources, and Grades.
 
@@ -316,7 +316,7 @@ Student performance on specific assessments.
 | **Classes — Attendance** | One-to-Many | One class session has attendance per student. |
 | **Assessments — Grades** | One-to-Many | One assessment has grade entries per student. |
 
-## 📊 Analytical Queries
+## Analytical Queries
 
 The SQL script includes 8 analytical queries that demonstrate practical database operations:
 
@@ -333,30 +333,30 @@ The SQL script includes 8 analytical queries that demonstrate practical database
 
 Execution screenshots for each query are available in the [`docs/`](docs/) directory.
 
-## 👥 Group Members
+## Group Members
 
-| No. | Name | YKPT | Role |
+| No. | Name | Role |
 | --- | --- | --- | --- |
-| 1 | Aung Myint Myat | 23046 | Project Leader |
-| 2 | Aung Khant Kyaw | 23023 | Designer |
-| 3 | Phyo Khant Kyaw | 23027 | Designer |
-| 4 | Min Khant Aung | 23036 | Designer |
-| 5 | Chan Myaw Htike | 23057 | SQL |
-| 6 | Ye Kyaw Swar | 23050 | SQL |
-| 7 | Htet Thu Aung | 23019 | SQL |
-| 8 | Aung Oo Khant | 23031 | Documentation |
-| 9 | Nyan Linn Htet | 23016 | Documentation |
+| 1 | Aung Myint Myat | Project Leader |
+| 2 | Aung Khant Kyaw | Designer |
+| 3 | Phyo Khant Kyaw | Designer |
+| 4 | Min Khant Aung | Designer |
+| 5 | Chan Myaw Htike | SQL |
+| 6 | Ye Kyaw Swar | SQL |
+| 7 | Htet Thu Aung | SQL |
+| 8 | Aung Oo Khant | Documentation |
+| 9 | Nyan Linn Htet | Documentation |
 
-## 🤝 Contributing
+## Contributing
 
 While this is primarily an academic portfolio project, suggestions for improvements, bug reports, and code reviews are welcome. Please open an issue or reach out directly.
 
-## 📄 License
+## License
 
 This repository is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.
 
 ---
 
 <div align="center">
-  <sub>Built with ❤️ during my academic journey</sub>
+  <sub>Built with passion during my academic journey</sub>
 </div>
